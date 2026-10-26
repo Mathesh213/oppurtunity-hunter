@@ -1,248 +1,293 @@
-<p align="center">
-  <img src="frontend/public/favicon.svg" width="80" height="80" alt="Opportunity Hunter logo"/>
-</p>
+# 🎯 Opportunity Hunter
+### Discover Opportunities. Match Your Potential. Take Action.
 
-<h1 align="center">🎯 Opportunity Hunter</h1>
+**Opportunity Hunter** is an AI-powered opportunity discovery platform designed to help students and job seekers find relevant scholarships, hackathons, internships, grants, and other career-building opportunities.
 
-<p align="center">
-  <em>"Never miss a life-changing opportunity again."</em>
-</p>
-
-<p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Frontend-Vercel-000?logo=vercel&style=flat-square" alt="Vercel"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Backend-Railway-0B0D0E?logo=railway&style=flat-square" alt="Railway"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Database-Supabase-3ECF8E?logo=supabase&style=flat-square" alt="Supabase"></a>
-  <a href="#"><img src="https://img.shields.io/badge/AI-OpenRouter-FF6B6B?logo=openai&style=flat-square" alt="OpenRouter"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Stack-Next.js%20%7C%20FastAPI-000?style=flat-square" alt="Stack"></a>
-  <a href="https://github.com/rahulcvwebsitehosting/Opportunity-Hunter"><img src="https://img.shields.io/badge/Repo-GitHub-181717?logo=github&style=flat-square" alt="GitHub"></a>
-</p>
+Instead of manually searching across multiple websites, users can create a personalized profile using their resume or GitHub information, discover opportunities suited to their background, evaluate match scores, and prepare applications with AI assistance.
 
 ---
 
-Opportunity Hunter is an autonomous AI agent that finds scholarships, hackathons, grants, and internships for you. You upload a resume or paste a GitHub link. It builds a profile, searches the web, scores what it finds, and even drafts applications. No more scrolling through pages of deadlines.
+## ✨ Features
 
----
+### 👤 1. Personalized Profile Creation
+- Create a profile by uploading a resume or providing supported profile information.
+- Extract relevant skills, education, and experience.
+- Use profile information to personalize opportunity discovery.
 
-## 🧠 Development Story & AI Stack
+### 🔎 2. AI-Powered Opportunity Discovery
+- Discover scholarships, internships, hackathons, grants, and similar opportunities.
+- Use web search to find potentially relevant opportunities.
+- Generate results based on a user's profile and interests.
 
-### Built by **GPT-5.6** + **Codex (OpenAI)**
+### 📊 3. Opportunity Matching
+- Evaluate opportunities against a user's profile.
+- Present match scores and relevant explanations.
+- Help users identify opportunities that better fit their skills and eligibility.
 
-Not gonna bury the lede here. **GPT-5.6 wrote almost everything** — the full backend architecture, all four agent loops (Profiler, Hunter, Reasoner, Co-Pilot), the `llm_router.py` that handles model routing, every FastAPI route (`/onboard`, `/hunt`, `/opportunities`, `/apply`), the frontend in Next.js with Tailwind and Shadcn, even the Supabase schema with pgvector. The split-deployment model (Vercel frontend, Railway backend, Supabase database) was GPT-5.6's design too.
+### 🤖 4. AI Application Co-Pilot
+- Generate tailored cover letter drafts.
+- Summarize application requirements.
+- Create application checklists.
+- Help users organize their next steps.
 
-**Codex (OpenAI)** was the other half of this. It handled the iterative loop — debugging sessions, fixing build errors, optimizing slow endpoints, refactoring components that felt off. Accessibility (WCAG AA stuff, focus traps, keyboard nav, `prefers-reduced-motion`) was all Codex. Everytime something broke, Codex traced it, patched it, and the fix went back into the cycle.
-
-I also swapped in other models for specific tasks — **GLM 5.2**, **DeepSeek V4 Pro**, **Mistral Large 3** — to generate and compare different module-level approaches. But the core architecture, the agent logic, the deployment configs? That's GPT-5.6 and Codex.
-
-### Embedded Models (running inside the backend)
-
-These aren't just API calls. They're embedded directly into the agent stack:
-
-| Model | Provider | What it does |
-|-------|----------|-------------|
-| **gpt-oss-120b** | NVIDIA NIM | Eligibility reasoning, tool orchestration |
-| **Mistral Large 3** | NVIDIA NIM | Resume parsing, cover letter drafting |
-| **MiniMax M3** | OpenRouter | Agentic tool-calling, web search orchestration |
-| **Gemini 3.5 Flash** | Free tier | OCR fallback for scanned PDFs |
-| **whisper-large-v3** | NVIDIA NIM | Audio transcription (voice profile input) |
-| **NV-Embed-v1** | NVIDIA NIM | Vector embeddings for semantic similarity |
-
-The backend hits each model through OpenAI-compatible SDKs (NVIDIA NIM) or OpenRouter. No middleman orchestration service. `llm_router.py` handles failover, retries, formatting differences.
-
----
-
-## ✨ Core Features
-
-### 🔍 Resume Parsing (Profiler Agent)
-Drop a PDF or paste a GitHub link. Mistral Large 3 extracts your skills, education, experience into a structured vector profile. Stored in Supabase pgvector.
-
-### 🎯 Hunter Agent (Tavily API)
-The AI takes your profile, thinks about what you'd actually qualify for, then hits Tavily to find real opportunities. Scholarships, hackathons, internships, conferences.
-
-### 📊 Opportunity Score
-Each result gets a match score (0-100%) with explanations. Green checks for what lines up ("✔ India eligible", "✔ Python experience matches"). Red crosses for mismatches. Effort/ROI estimates included.
-
-### 🤖 Application Co-Pilot
-Opens a modal with a focus trap (ESC to close, proper ARIA). Summarizes the application requirements, builds a checklist, drafts a cover letter. Copy, download, print — all there.
-
-### ⏰ Missed Opportunity Detector
-Notices when you skip high-value matches. Adjusts your feed. Resurfaces critical ones. Drops irrelevant noise.
+### 🎯 5. Profile-Specific Results
+- Associate discovered opportunities with the corresponding user profile.
+- Retrieve opportunities for the selected profile.
+- Reduce confusion between results belonging to different profiles.
 
 ---
 
 ## 🏗️ Architecture
 
-The agent loops take 30-60 seconds. Serverless would time out. So it's split:
+Opportunity Hunter uses a frontend, backend, and database architecture.
 
-```mermaid
-flowchart LR
-    A[User on Vercel Frontend] -->|Next.js API Call| B{Railway FastAPI Backend}
-    B -->|OpenAI SDK| C[NVIDIA NIM]
-    B -->|OpenRouter SDK| D[OpenRouter]
-    C -->|gpt-oss-120b| E[Eligibility Reasoning / Co-Pilot]
-    C -->|Mistral Large 3| F[Resume Parsing]
-    C -->|whisper-large-v3| G[Audio Transcription]
-    C -->|NV-Embed-v1| H[Vector Embeddings]
-    D -->|MiniMax M3| I[Tool Orchestration]
-    D -->|Gemini 3.5 Flash| J[PDF Fallback OCR]
-    I -->|Search Tool| K[Tavily Web Search API]
-    B -->|Store / Retrieve| L[(Supabase pgvector)]
+| Component | Technology |
+|---|---|
+| Frontend | Next.js, React, TypeScript |
+| Styling | Tailwind CSS, Shadcn UI |
+| Backend | Python, FastAPI |
+| Database | Supabase, PostgreSQL |
+| AI integration | OpenRouter |
+| Web search | Tavily API |
+| Frontend deployment | Vercel-compatible |
+| Backend deployment | Railway-compatible |
+
+The application separates the user interface, API endpoints, AI processing, and persistent data storage.
+
+### How It Works
+
+```text
+       User
+        |
+        v
+  Next.js Frontend
+        |
+        v
+   FastAPI Backend
+        |
+        +------------------+
+        |                  |
+        v                  v
+   AI Processing       Web Search
+   OpenRouter          Tavily API
+        |                  |
+        +---------+--------+
+                  |
+                  v
+       Opportunity Matching
+                  |
+                  v
+        Supabase Database
+                  |
+                  v
+      Personalized Dashboard
 ```
-
-### Where things live
-
-| Layer | Platform | Stack |
-|-------|----------|-------|
-| **Frontend** | Vercel | Next.js 16 (App Router), Tailwind CSS 4, Shadcn UI |
-| **Backend** | Railway | Python FastAPI, multi-agent pipeline |
-| **Database** | Supabase | PostgreSQL + pgvector extension |
-| **AI** | NVIDIA NIM + OpenRouter | Routed through `llm_router.py` |
-| **Search** | Tavily API | Real-time web search |
 
 ---
 
-## 🚀 Local Setup
+## 🛠️ Technology Stack
+
+**Frontend**
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+**Backend**
+- Python
+- FastAPI
+- Pydantic
+
+**Database**
+- Supabase
+- PostgreSQL
+
+**External Services**
+- OpenRouter for AI model access
+- Tavily for web search
+
+---
+
+## 🚀 Getting Started
+
+Follow these instructions to run the project locally.
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 20+
-- Supabase project with pgvector
-- API keys (NVIDIA NIM, OpenRouter, Tavily — Gemini optional)
+Install the following:
 
-### 1. Clone
+- Python 3.11 or a compatible version
+- Node.js and npm
+- A Supabase project
+- An OpenRouter API key
+- A Tavily API key
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/rahulcvwebsitehosting/Opportunity-Hunter.git
-cd Opportunity-Hunter
+git clone https://github.com/Mathesh213/oppurtunity-hunter.git
+cd oppurtunity-hunter
 ```
 
-### 2. Backend
+### 2. Configure the Backend
+
+Navigate to the backend directory:
 
 ```bash
 cd backend
+```
+
+Create a virtual environment:
+
+```bash
 python -m venv venv
-# .\venv\Scripts\activate on Windows
+```
+
+Activate it on Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Install the dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Create `backend/.env`:
+Create a `backend/.env` file and configure the environment variables required by your backend implementation.
+
+Typical configuration categories include:
 
 ```env
-NVIDIA_NIM_API_KEY=nvapi-your-key-here
-NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-TAVILY_API_KEY=tvly-your-key-here
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ-your-service-role-key
-GITHUB_TOKEN=github_pat_your-token-here
-GEMINI_API_KEY=AIza-your-key-here
-MODEL_REASONER=openai/gpt-oss-120b
-MODEL_PARSER=mistralai/mistral-large-2512
-MODEL_ORCHESTRATOR=minimax/minimax-m3
-DEMO_MODE=true
+OPENROUTER_API_KEY=your_openrouter_api_key
+TAVILY_API_KEY=your_tavily_api_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
+Use the exact variable names expected by your backend configuration. Additional model or provider settings may be required.
+
+**Security:** Never commit API keys, service-role keys, passwords, or other secrets to GitHub.
+
+Start the backend:
+
 ```bash
-python seed_demo_data.py
 uvicorn main:app --reload --port 8000
 ```
 
-### 3. Frontend
+The API will be available at:
+
+`http://localhost:8000`
+
+### 3. Configure the Frontend
+
+Open another terminal and navigate to the frontend directory:
 
 ```bash
-cd ../frontend
+cd frontend
+```
+
+Install dependencies:
+
+```bash
 npm install
 ```
 
-Create `frontend/.env.local`:
+Create a `frontend/.env.local` file with the appropriate backend and public Supabase configuration:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ-your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+Configure only the variables required by your frontend.
+
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open:
+
+`http://localhost:3000`
 
 ---
 
-## 🌐 Environment Variables
+## 🗄️ Database Setup
 
-### Backend
+Opportunity Hunter uses Supabase for persistent storage.
 
-| Variable | Required | What it's for |
-|----------|----------|---------------|
-| `NVIDIA_NIM_API_KEY` | Yes | NVIDIA NIM inference |
-| `NVIDIA_NIM_BASE_URL` | Yes | `https://integrate.api.nvidia.com/v1` |
-| `OPENROUTER_API_KEY` | Yes | OpenRouter model routing |
-| `OPENROUTER_BASE_URL` | Yes | `https://openrouter.ai/api/v1` |
-| `TAVILY_API_KEY` | Yes | Web search |
-| `SUPABASE_URL` | Yes | Project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-side key |
-| `GITHUB_TOKEN` | No | Profile enrichment |
-| `GEMINI_API_KEY` | No | PDF OCR fallback |
-| `MODEL_REASONER` | Yes | Reasoner/Co-Pilot model ID |
-| `MODEL_PARSER` | Yes | Profiler/Parser model ID |
-| `MODEL_ORCHESTRATOR` | Yes | Hunter/Orchestrator model ID |
-| `DEMO_MODE` | No | `true` to seed data on startup |
+The application uses profile and opportunity data, including the association between an opportunity and its corresponding user profile.
 
-### Frontend
+If your database does not yet contain the required schema, configure the necessary tables, relationships, and indexes before running the application.
 
-| Variable | Required | What it's for |
-|----------|----------|---------------|
-| `NEXT_PUBLIC_API_URL` | Yes | Backend URL (local or deployed) |
-| `NEXT_PUBLIC_SUPABASE_URL` | No | Client-side Supabase URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Client-side anon key |
+For profile-specific opportunity storage, the `opportunities` table should contain a `profile_id` column that references the corresponding profile record.
+
+Ensure database access policies and backend credentials are configured securely for your deployment.
 
 ---
 
-## 🎬 Demo Flow
+## 🎬 Application Workflow
 
-```
-1. Onboard   → Upload resume PDF or paste GitHub link
-2. Hunt      → Click "Run Hunter Agent"
-                AI reasons over your profile
-                Tavily searches the web
-                Opportunities scored 0-100%
-3. Review    → Match Score with ✔/✘ reasoning
-                Effort & ROI estimates
-                Collapsible AI rationale
-4. Apply     → Click "Apply via Co-Pilot"
-                Requirements summary
-                Step checklist
-                Tailored cover letter draft
-```
+1. **Create a profile** using the available onboarding options.
+2. **Provide your background** through resume or profile information.
+3. **Run the Hunter Agent** to discover relevant opportunities.
+4. **Review matches** and evaluate their relevance to your profile.
+5. **Open the Application Co-Pilot** for application guidance.
+6. **Prepare your application** using the generated checklist and cover letter draft.
+
+AI-generated results should be verified against the original opportunity listing before applying.
 
 ---
 
-## 🛠️ Built With
+## 🔐 Environment Variables
 
-**AI:** [GPT-5.6](https://openai.com) · [Codex](https://openai.com/codex) · [GPT-OSS-120b](https://nvidia.com/nim) · [DeepSeek V4 Pro](https://deepseek.com) · [Mistral Large 3](https://mistral.ai) · [GLM 5.2](https://zhipu.ai) · [MiniMax M3](https://minimax.io) · [Gemini 3.5 Flash](https://deepmind.google) · [whisper-large-v3](https://nvidia.com/nim) · [NV-Embed-v1](https://nvidia.com/nim)
+Keep environment files local and out of version control.
 
-**Framework:** [Next.js 16](https://nextjs.org) · [FastAPI](https://fastapi.tiangolo.com) · [Supabase pgvector](https://supabase.com) · [Vercel](https://vercel.com) · [Railway](https://railway.com)
+| Variable | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` | Access AI models through OpenRouter |
+| `TAVILY_API_KEY` | Access web search |
+| `SUPABASE_URL` | Connect the backend to Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side database access |
+| `NEXT_PUBLIC_API_URL` | Frontend API endpoint |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public Supabase client key |
 
-**APIs:** [OpenRouter](https://openrouter.ai) · [NVIDIA NIM](https://nvidia.com/nim) · [Tavily API](https://tavily.com)
+The exact variables required depend on the configuration implemented in the project.
 
-**UI:** [Tailwind CSS 4](https://tailwindcss.com) · [Shadcn UI](https://ui.shadcn.com) · [Framer Motion](https://framer.com/motion) · [Lucide](https://lucide.dev) · [Fira Sans / Fira Code](https://github.com/mozilla/Fira)
+Never expose a Supabase service-role key in frontend code or publish it in a public repository.
 
 ---
 
-## 🎨 Design
+## 🔮 Potential Future Improvements
 
-**Colors:** Violet `#7C3AED` + Cyan `#0891B2` on warm white `#FAF5FF`
-**Fonts:** Fira Sans (body) + Fira Code (code/data)
-**Accessibility:** WCAG AA+ — high contrast, focus rings, keyboard nav, `prefers-reduced-motion`, semantic HTML, ARIA labels
-**Effects:** AI typing pulse, scroll reveals, count-up score animations, smooth hover lift
+- Deadline reminders and notifications
+- Saved opportunities and application tracking
+- Advanced filtering by location, eligibility, and category
+- Improved duplicate detection
+- Personalized recommendations based on user feedback
+- Opportunity status tracking
+- Automated deployment and testing
+- Expanded support for additional opportunity sources
 
 ---
 
-<p align="center">
-  Made by <a href="https://github.com/rahulcvwebsitehosting">@rahulcvwebsitehosting</a>
-  <br/>
-  <strong>Built by GPT-5.6 + Codex (OpenAI)</strong>
-</p>
+## 👨‍💻 Development
+
+Opportunity Hunter is an evolving project focused on personalized opportunity discovery, AI-assisted recommendations, and application preparation.
+
+Contributions, feedback, and suggestions for improving the platform are welcome.
+
+---
+
+## 📄 License
+
+No license has been specified yet. If you plan to distribute or accept contributions to this project, consider adding an appropriate open-source license.
+
+---
+
+**Built to help students and job seekers spend less time searching and more time pursuing opportunities.**
