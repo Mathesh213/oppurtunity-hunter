@@ -10,7 +10,7 @@ class Education(BaseModel):
 
 class Experience(BaseModel):
     role: str
-    company: str
+    company: Optional[str] = None
     duration: Optional[str] = None
     description: Optional[str] = None
 

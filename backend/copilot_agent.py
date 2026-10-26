@@ -1,6 +1,6 @@
 import json
 from typing import Dict, Any, List
-from llm_router import chat_completion, MODEL_REASONER
+from llm_router import chat_completion_structured, MODEL_REASONER
 
 
 def generate_application_assets(
@@ -43,11 +43,12 @@ Output ONLY valid JSON with this structure:
 
 No markdown, no other text.
 """
-    response = chat_completion(
+    response = chat_completion_structured(
         model=MODEL_REASONER,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
         max_tokens=2500,
+        response_format={"type": "json_object"},
     )
     raw = response.choices[0].message.content
     if raw.startswith("```"):

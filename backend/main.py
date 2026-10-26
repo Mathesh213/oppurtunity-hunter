@@ -59,6 +59,7 @@ def fetch_github_readme(github_url: str) -> Optional[str]:
         resp = httpx.get(url, headers=headers, follow_redirects=True)
         resp.raise_for_status()
         import base64
+
         return base64.b64decode(resp.json()["content"]).decode("utf-8", errors="ignore")
     except Exception:
         return None
@@ -70,12 +71,18 @@ def root():
 
 
 @app.post("/onboard", response_model=OnboardResponse)
-async def onboard(file: UploadFile = File(None), github_url: str = Form(None), raw_text: str = Form(None)):
+async def onboard(
+    file: UploadFile = File(None),
+    github_url: str = Form(None),
+    raw_text: str = Form(None),
+):
     profile_dict = {}
     if file and file.filename:
         suffix = os.path.splitext(file.filename)[1].lower()
         if suffix != ".pdf":
-            raise HTTPException(status_code=400, detail="Only PDF resumes are supported")
+            raise HTTPException(
+                status_code=400, detail="Only PDF resumes are supported"
+            )
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(await file.read())
             tmp_path = tmp.name
@@ -86,7 +93,9 @@ async def onboard(file: UploadFile = File(None), github_url: str = Form(None), r
     elif raw_text:
         profile_dict = profile_from_text(raw_text)
     else:
-        raise HTTPException(status_code=400, detail="Provide a PDF file or raw resume text")
+        raise HTTPException(
+            status_code=400, detail="Provide a PDF file or raw resume text"
+        )
 
     if github_url:
         readme = fetch_github_readme(github_url)
@@ -135,24 +144,34 @@ async def hunt_endpoint(req: HuntRequest):
             score = 50
             reasoning = ["Unable to analyze opportunity"]
 
-        insert_opportunity(title=title, url=url, raw_text=raw_text[:8000], score=score, reasoning=reasoning)
-        scored.append({
-            "title": title,
-            "url": url,
-            "summary": raw_text[:400],
-            "score": score,
-            "reasoning": reasoning,
-            "effort_estimate": effort,
-            "roi_estimate": roi,
-        })
+        insert_opportunity(
+            profile_id=req.profile_id,
+            title=title,
+            url=url,
+            raw_text=raw_text[:8000],
+            score=score,
+            reasoning=reasoning,
+        )
+        scored.append(
+            {
+                "title": title,
+                "url": url,
+                "summary": raw_text[:400],
+                "score": score,
+                "reasoning": reasoning,
+                "effort_estimate": effort,
+                "roi_estimate": roi,
+            }
+        )
 
     scored.sort(key=lambda x: x["score"], reverse=True)
     return HuntResponse(profile_id=req.profile_id, opportunities=scored)
 
 
 @app.get("/opportunities", response_model=OpportunitiesListResponse)
-async def list_opportunities():
-    rows = get_scored_opportunities()
+async def list_opportunities(profile_id: str):
+    rows = get_scored_opportunities(profile_id)
+
     opportunities = [
         OpportunityResponse(
             id=row["id"],
@@ -165,6 +184,7 @@ async def list_opportunities():
         )
         for row in rows
     ]
+
     return OpportunitiesListResponse(opportunities=opportunities)
 
 
@@ -194,7 +214,9 @@ async def apply_endpoint(req: ApplyRequest):
             opportunity_id=req.opportunity_id,
             cover_letter=assets.get("cover_letter", ""),
             application_checklist=assets.get("application_checklist", []),
-            estimated_completion_time=assets.get("estimated_completion_time", "Unknown"),
+            estimated_completion_time=assets.get(
+                "estimated_completion_time", "Unknown"
+            ),
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Co-Pilot failed: {exc}")
@@ -202,4 +224,5 @@ async def apply_endpoint(req: ApplyRequest):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,27 +1,32 @@
 # Dependencies
 node_modules/
 venv/
+.venv/
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Build
+# Build outputs
 .next/
 dist/
 build/
+out/
 
-# Env
+# Environment files and secrets
 .env
+.env.*
+!.env.example
+!.env.sample
 
-# Temp
+# Temporary files
 *.pdf
 temp_*
-*.json
-!package.json
-!tsconfig.json
-!components.json
-!vercel.json
 test_*.json
 
-# OS
+# OS and editor files
 .DS_Store
 Thumbs.db
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*

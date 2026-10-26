@@ -24,6 +24,7 @@ def get_user_profile(profile_id: str) -> Optional[Dict[str, Any]]:
 
 
 def insert_opportunity(
+    profile_id: str,
     title: str,
     url: str,
     raw_text: str,
@@ -31,6 +32,7 @@ def insert_opportunity(
     reasoning: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     row = {
+        "profile_id": profile_id,
         "title": title,
         "url": url,
         "raw_text": raw_text,
@@ -39,14 +41,16 @@ def insert_opportunity(
         row["score"] = score
     if reasoning is not None:
         row["reasoning"] = reasoning
+
     result = supabase.table("opportunities").insert(row).execute()
     return result.data[0]
 
 
-def get_scored_opportunities(limit: int = 10) -> List[Dict[str, Any]]:
+def get_scored_opportunities(profile_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     result = (
         supabase.table("opportunities")
         .select("*")
+        .eq("profile_id", profile_id)
         .order("score", desc=True)
         .limit(limit)
         .execute()
@@ -56,10 +60,7 @@ def get_scored_opportunities(limit: int = 10) -> List[Dict[str, Any]]:
 
 def get_opportunity_by_id(opportunity_id: str) -> Optional[Dict[str, Any]]:
     result = (
-        supabase.table("opportunities")
-        .select("*")
-        .eq("id", opportunity_id)
-        .execute()
+        supabase.table("opportunities").select("*").eq("id", opportunity_id).execute()
     )
     if result.data:
         return result.data[0]

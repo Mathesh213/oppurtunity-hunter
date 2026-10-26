@@ -83,7 +83,7 @@ export function Dashboard({ profileId, profile }: DashboardProps) {
 
   const loadStored = async () => {
     try {
-      const result = await getOpportunities();
+      const result = await getOpportunities(profileId);
       setOpportunities(result.opportunities);
       setLoadedFromCache(true);
     } catch (err) {
@@ -94,7 +94,7 @@ export function Dashboard({ profileId, profile }: DashboardProps) {
 
   useEffect(() => {
     loadStored();
-  }, []);
+  }, [profileId]);
 
   const handleApply = (opId: string, title: string) => {
     setSelectedOpp({ id: opId, title });
@@ -281,13 +281,12 @@ export function Dashboard({ profileId, profile }: DashboardProps) {
                           )}
                         </div>
                         <p
-                          className={`text-xs ${
-                            done
-                              ? "text-emerald-700"
-                              : current
-                                ? "text-violet-700 font-medium"
-                                : "text-muted-foreground"
-                          }`}
+                          className={`text-xs ${done
+                            ? "text-emerald-700"
+                            : current
+                              ? "text-violet-700 font-medium"
+                              : "text-muted-foreground"
+                            }`}
                         >
                           {s}
                         </p>

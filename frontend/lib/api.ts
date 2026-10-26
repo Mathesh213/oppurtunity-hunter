@@ -67,8 +67,13 @@ export async function runHunt(profileId: string): Promise<HuntResponse> {
   return res.json();
 }
 
-export async function getOpportunities(): Promise<{ opportunities: StoredOpportunity[] }> {
-  const res = await fetch(`${API_BASE}/opportunities`);
+export async function getOpportunities(
+  profileId: string
+): Promise<{ opportunities: StoredOpportunity[] }> {
+  const res = await fetch(
+    `${API_BASE}/opportunities?profile_id=${encodeURIComponent(profileId)}`
+  );
+
   if (!res.ok) throw new Error(`Fetch failed: ${await res.text()}`);
   return res.json();
 }
